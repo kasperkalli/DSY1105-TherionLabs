@@ -18,4 +18,7 @@ interface ProspectoDAO {
 
     @Query("SELECT * FROM prospectos WHERE id = :id LIMIT 1")
     suspend fun obtenerPorId(id: Int): ProspectoEntity?
+
+    @Query("DELETE FROM prospectos WHERE id = :id")
+    suspend fun borrarProspecto(id: Int)
 }

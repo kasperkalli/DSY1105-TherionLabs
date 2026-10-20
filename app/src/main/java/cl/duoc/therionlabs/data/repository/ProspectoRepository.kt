@@ -23,4 +23,8 @@ class ProspectoRepository(
     ): ProspectoEntity? {
         return prospectoDao.obtenerPorId(id)
     }
+
+    suspend fun borrarProspecto(id: Int) {
+        prospectoDao.borrarProspecto(id)
+    }
 }

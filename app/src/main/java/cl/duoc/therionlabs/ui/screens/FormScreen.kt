@@ -1,298 +1,162 @@
 package cl.duoc.therionlabs.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
+import cl.duoc.therionlabs.data.model.ErroresFormularioProspectos
+import cl.duoc.therionlabs.data.model.FormularioProspectos
+import cl.duoc.therionlabs.data.viewmodel.ProspectoViewModel
+import cl.duoc.therionlabs.ui.components.*
+import cl.duoc.therionlabs.ui.theme.TherionLabsAppTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
-fun FormScreen(navController: NavHostController) {
-
-    // Datos personales
-    var rutProspecto by remember { mutableStateOf("")}
-    var nombre by remember { mutableStateOf("") }
-    var apellidos by remember { mutableStateOf("")}
-    var establecimiento by remember {mutableStateOf("")}
-    var fechaNacimiento by remember { mutableStateOf("") }
-    var celular by remember { mutableStateOf("") }
-
-    // Datos de actividad u enseñanzas
-    var comunaResidencia by remember { mutableStateOf("") }
-    var comunaEstablecimiento by remember { mutableStateOf("") }
-
-    var expandedActividad by remember { mutableStateOf(false) }
-    val actividadActual = listOf("4to Medio", "Egresado enseñanza media", "Otra")
-    var actividadSeleccionada by remember {mutableStateOf(actividadActual[0])}
-
-    var email by remember { mutableStateOf("") }
-
-    val jornadas = listOf("Diurna", "Vespertina")
-    var selectedJornada by remember { mutableStateOf(jornadas[0]) }
-
-    // Control de errores
-    var mostrarErrores by remember { mutableStateOf(false) }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("THERIONLABS - Registro") },
-                actions = {
-                    Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = MaterialTheme.shapes.small
-                    ) {
-                        Text(
-                            text = "Modo Local",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    }
-                }
-            )
+fun FormScreen(navController: NavHostController, prospectoViewModel: ProspectoViewModel) {
+    val foco = LocalFocusManager.current
+    FormScreenContent(
+        formulario = prospectoViewModel.formulario,
+        errores = prospectoViewModel.erroresFormulario,
+        onFormularioChange = prospectoViewModel::actualizarFormulario,
+        onSiguiente = {
+            foco.clearFocus()
+            if (prospectoViewModel.validarDatosPersonales()) {
+                navController.navigate("selector_sede") { launchSingleTop = true }
+            }
+        },
+        onVerRegistros = {
+            foco.clearFocus()
+            navController.navigate("historyscreen") { launchSingleTop = true }
         }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        )
-            {
+    )
+}
 
-            Text(
-                text = "Datos personales",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 6.dp)
-                )
-
-            OutlinedTextField(
-                value = rutProspecto,
-                onValueChange = {rutProspecto = it },
-                label = { Text("Ingresa tu rut *")},
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = mostrarErrores && rutProspecto.isBlank(),
-                supportingText = {
-                    if (mostrarErrores && rutProspecto.isBlank()) {
-                        Text("Este campo es obligatorio")
-                    }
-                }
-            )
-            OutlinedTextField(
-                value = nombre,
-                onValueChange = { nombre = it },
-                label = { Text("Nombre *") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = mostrarErrores && nombre.isBlank(),
-                supportingText = {
-                    if (mostrarErrores && nombre.isBlank()) {
-                        Text("Este campo es obligatorio")
-                    }
-                }
-            )
-                OutlinedTextField(
-                    value = apellidos,
-                    onValueChange = { apellidos = it },
-                    label = { Text("Apellidos *") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = mostrarErrores && apellidos.isBlank(),
-                    supportingText = {
-                        if (mostrarErrores && apellidos.isBlank()) {
-                            Text("Este campo es obligatorio")
-                        }
-                    }
-                )
-
-                OutlinedTextField(
-                    value = fechaNacimiento,
-                    onValueChange = { fechaNacimiento = it },
-                    label = { Text("Fecha nacimiento *") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = mostrarErrores && fechaNacimiento.isBlank(),
-                    supportingText = {
-                        if (mostrarErrores && fechaNacimiento.isBlank()) {
-                            Text("Este campo es obligatorio")
-                        }
-                    }
-                )
-
-                OutlinedTextField(
-                    value = celular,
-                    onValueChange = { celular = it },
-                    label = { Text("Celular *") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = mostrarErrores && celular.isBlank(),
-                    supportingText = {
-                        if (mostrarErrores && celular.isBlank()) {
-                            Text("Este campo es obligatorio")
-                        }
-                    }
-
-                )
-
-                Text(
-                    text = "Datos Establecimiento",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                )
-
-                OutlinedTextField(
-                    value = establecimiento,
-                    onValueChange = { establecimiento = it },
-                    label = { Text("Establecimiento: *") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = mostrarErrores && establecimiento.isBlank(),
-                    supportingText = {
-                        if (mostrarErrores && establecimiento.isBlank()) {
-                            Text("Este campo es obligatorio")
-                        }
-                    }
-                )
-
-                OutlinedTextField(
-                    value = comunaResidencia,
-                    onValueChange = { comunaResidencia = it },
-                    label = { Text("Comuna de residencia *") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = mostrarErrores && comunaResidencia.isBlank(),
-                    supportingText = {
-                        if (mostrarErrores && comunaResidencia.isBlank()) {
-                            Text("Este campo es obligatorio")
-                        }
-                    }
-                )
-
-                OutlinedTextField(
-                    value = comunaEstablecimiento,
-                    onValueChange = { comunaEstablecimiento = it },
-                    label = { Text("Comuna de su establecimiento *") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = mostrarErrores && comunaEstablecimiento.isBlank(),
-                    supportingText = {
-                        if (mostrarErrores && comunaEstablecimiento.isBlank()) {
-                            Text("Este campo es obligatorio")
-                        }
-                    }
-                )
-
-                val isEmailValid = android.util.Patterns.EMAIL_ADDRESS
-                    .matcher(email)
-                    .matches()
-
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Correo Electrónico *") },
-                    isError = (mostrarErrores || email.isNotBlank()) &&
-                            !isEmailValid,
-                    supportingText = {
-                        if (mostrarErrores && email.isBlank()) {
-                            Text("Este campo es obligatorio")
-                        } else if (email.isNotBlank() && !isEmailValid) {
-                            Text("Formato de correo no válido")
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-            ExposedDropdownMenuBox(
-                expanded = expandedActividad,
-                onExpandedChange = { expandedActividad = !expandedActividad }
+@Composable
+private fun FormScreenContent(
+    formulario: FormularioProspectos,
+    errores: ErroresFormularioProspectos,
+    onFormularioChange: (FormularioProspectos) -> Unit,
+    onSiguiente: () -> Unit,
+    onVerRegistros: () -> Unit
+) {
+    val scroll = rememberScrollState()
+    LaunchedEffect(Unit) {
+        if (formulario == FormularioProspectos()) scroll.scrollTo(0)
+    }
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = { BarraSuperior("Nuevo prospecto", "Registros", onVerRegistros) }
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding).imePadding(), contentAlignment = Alignment.TopCenter) {
+            Column(
+                Modifier.widthIn(max = 640.dp).fillMaxWidth().verticalScroll(scroll)
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(13.dp)
             ) {
-                OutlinedTextField(
-                    value = actividadSeleccionada,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Actividad actual") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedActividad) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
-                )
-                ExposedDropdownMenu(
-                    expanded = expandedActividad,
-                    onDismissRequest = { expandedActividad = false }
-                ) {
-                    actividadActual.forEach { actividadActual ->
-                        DropdownMenuItem(
-                            text = { Text(actividadActual) },
-                            onClick = {
-                                actividadSeleccionada = actividadActual
-                                expandedActividad = false
-                            }
-                        )
+                CabeceraFormulario("Cuéntanos sobre ti", "Completa tus datos y da el primer paso hacia lo que quieres estudiar.", 1)
+                TituloSeccion("01", "Datos personales", "Los campos con * son obligatorios.")
+                CampoTextoTarjeta("RUT", formulario.rut,
+                    { onFormularioChange(formulario.copy(rut = it)) }, IconosFormulario.Identidad,
+                    mensajeError = errores.rut, ejemplo = "12.345.678-5", tipoTeclado = KeyboardType.Ascii)
+                CampoTextoTarjeta("Nombre", formulario.nombre,
+                    { onFormularioChange(formulario.copy(nombre = it)) }, IconosFormulario.Persona,
+                    mensajeError = errores.nombre, ejemplo = "Tu nombre")
+                CampoTextoTarjeta("Apellidos", formulario.apellidos,
+                    { onFormularioChange(formulario.copy(apellidos = it)) }, IconosFormulario.Persona,
+                    mensajeError = errores.apellidos, ejemplo = "Tus apellidos")
+                CampoTextoTarjeta("Fecha de nacimiento", formulario.fechaNacimiento,
+                    { onFormularioChange(formulario.copy(fechaNacimiento = it)) }, IconosFormulario.Calendario,
+                    mensajeError = errores.fechaNacimiento, ejemplo = "DD/MM/AAAA")
+
+                TituloSeccion("02", "Cómo contactarte", "Revisa que tu celular y correo estén bien escritos.")
+                CampoTextoTarjeta("Celular", formulario.celular,
+                    { onFormularioChange(formulario.copy(celular = it)) }, IconosFormulario.Telefono,
+                    mensajeError = errores.celular, ejemplo = "+56 9 1234 5678", tipoTeclado = KeyboardType.Phone)
+                CampoTextoTarjeta("Correo electrónico", formulario.email,
+                    { onFormularioChange(formulario.copy(email = it)) }, IconosFormulario.Correo,
+                    mensajeError = errores.email, ejemplo = "nombre@ejemplo.cl", tipoTeclado = KeyboardType.Email)
+                CampoTextoTarjeta("Comuna de residencia", formulario.comunaResidencia,
+                    { onFormularioChange(formulario.copy(comunaResidencia = it)) }, IconosFormulario.Ubicacion,
+                    mensajeError = errores.comunaResidencia, ejemplo = "Comuna donde vives")
+
+                TituloSeccion("03", "Tus estudios", "Queremos conocer tu situación actual.")
+                CampoTextoTarjeta("Establecimiento", formulario.establecimiento,
+                    { onFormularioChange(formulario.copy(establecimiento = it)) }, IconosFormulario.Edificio,
+                    mensajeError = errores.establecimiento, ejemplo = "Nombre de tu establecimiento")
+                CampoTextoTarjeta("Comuna del establecimiento", formulario.comunaEstablecimiento,
+                    { onFormularioChange(formulario.copy(comunaEstablecimiento = it)) }, IconosFormulario.Ubicacion,
+                    mensajeError = errores.comunaEstablecimiento, ejemplo = "Comuna de tu establecimiento")
+                CampoSeleccionTarjeta("Actividad actual", formulario.actividadActual,
+                    listOf("4to Medio", "Egresado enseñanza media", "Otra"),
+                    { onFormularioChange(formulario.copy(actividadActual = it)) }, IconosFormulario.Estudios,
+                    mensajeError = errores.actividadActual)
+                CampoOpcionesTarjeta("Jornada de estudio", formulario.jornada, listOf("Diurna", "Vespertina"),
+                    { onFormularioChange(formulario.copy(jornada = it)) }, IconosFormulario.Reloj,
+                    mensajeError = errores.jornada)
+
+                TituloSeccion("04", "Tus preferencias", "Elige cómo estudiar y cómo recibir información.")
+                CampoSeleccionTarjeta("Modalidad", formulario.modalidad, listOf("Online", "Presencial"),
+                    { onFormularioChange(formulario.copy(modalidad = it)) }, IconosFormulario.Estudios,
+                    mensajeError = errores.modalidad)
+                CampoSeleccionTarjeta("Canal de contacto", formulario.canalContacto,
+                    listOf("Correo electrónico", "Llamada telefónica", "WhatsApp"),
+                    { onFormularioChange(formulario.copy(canalContacto = it)) }, IconosFormulario.Correo,
+                    mensajeError = errores.canalContacto)
+
+                Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.secondaryContainer,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f))) {
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
+                        .toggleable(value = formulario.autorizaContacto, role = Role.Checkbox,
+                            onValueChange = { onFormularioChange(formulario.copy(autorizaContacto = it)) })
+                        .padding(14.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Checkbox(checked = formulario.autorizaContacto, onCheckedChange = null)
+                        Text("Autorizo que me contacten para recibir información académica.",
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                     }
                 }
-            }
-
-            Text("Jornada de estudio preferida", style = MaterialTheme.typography.titleSmall)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                jornadas.forEach { jornadas ->
-                    RadioButton(
-                        selected = (jornadas == selectedJornada),
-                        onClick = { selectedJornada = jornadas }
-                    )
-                    Text(text = jornadas, modifier = Modifier.padding(end = 16.dp))
+                MensajeCampo(if (errores.hayErroresDatosPersonales) "Revisa los campos marcados antes de continuar." else null)
+                Button(onClick = onSiguiente, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                    shape = RoundedCornerShape(16.dp), contentPadding = PaddingValues(16.dp)) {
+                    Text("Continuar", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.width(10.dp))
+                    Icon(IconosFormulario.Adelante, contentDescription = null, modifier = Modifier.size(21.dp))
                 }
+                Text("En el siguiente paso elegirás tu sede y tus carreras.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(10.dp))
             }
-
-                Button(
-                    onClick = {
-                        mostrarErrores = true
-
-                        val camposCompletos = listOf(
-                            rutProspecto,
-                            nombre,
-                            apellidos,
-                            fechaNacimiento,
-                            celular,
-                            establecimiento,
-                            comunaResidencia,
-                            comunaEstablecimiento,
-                            email
-                        ).all { it.isNotBlank() }
-
-                        val correoValido = android.util.Patterns.EMAIL_ADDRESS
-                            .matcher(email)
-                            .matches()
-
-                        if (camposCompletos && correoValido) {
-                            navController.navigate("selector_sede")
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                ) {
-                    Text("SIGUIENTE")
-                }
-
-            }
+        }
     }
 }
 
-@Preview(showBackground = true)
+@Preview(name = "Registro claro", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
 fun FormScreenPreview() {
-    FormScreen(navController = rememberNavController())
+    var formulario by remember { mutableStateOf(FormularioProspectos()) }
+    TherionLabsAppTheme(darkTheme = false) {
+        FormScreenContent(formulario, ErroresFormularioProspectos(), { formulario = it }, {}, {})
+    }
+}
+
+@Preview(name = "Registro oscuro", showBackground = true, widthDp = 390, heightDp = 844)
+@Composable
+fun FormScreenDarkPreview() {
+    TherionLabsAppTheme(darkTheme = true) {
+        FormScreenContent(FormularioProspectos(), ErroresFormularioProspectos(), {}, {}, {})
+    }
 }
