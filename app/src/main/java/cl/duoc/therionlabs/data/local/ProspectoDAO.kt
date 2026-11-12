@@ -28,4 +28,8 @@ interface ProspectoDAO {
     suspend fun obtenerPorId(id: Int): ProspectoEntity?
 
     @Query("DELETE FROM prospectos WHERE id = :id") suspend fun borrarProspecto(id: Int)
+
+
+    @Query("SELECT * FROM prospectos ORDER BY id DESC")
+    suspend fun obtenerParaExportacion(): List<ProspectoEntity>
 }

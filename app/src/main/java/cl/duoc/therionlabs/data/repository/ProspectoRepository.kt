@@ -11,6 +11,19 @@ class ProspectoRepository(private val db: AppDatabase) {
 
     fun registros() = dao.obtenerProspectos()
 
+    suspend fun obtenerProspectosParaExcel(
+        usuario: SesionUsuario
+    ): List<ProspectoEntity> = db.withTransaction {
+
+        val usuarioActual = db.operacionDao().usuarioPorId(usuario.id)
+
+        require(usuarioActual?.rol == Roles.ADMINISTRATIVO) {
+            "Solo los administrativos pueden exportar prospectos."
+        }
+
+        dao.obtenerParaExportacion()
+    }
+
     suspend fun guardarProspecto(usuario: SesionUsuario, prospecto: ProspectoEntity): Long =
         db.withTransaction {
             val responsable = requireNotNull(db.operacionDao().usuarioPorId(usuario.id))
