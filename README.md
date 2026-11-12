@@ -1,147 +1,91 @@
-# TherionLabsApp - Captura de prospectos Duoc UC
+# TherionLabs · Valparaíso
 
-Proyecto de la asignatura Desarrollo de Aplicaciones Móviles (DSY1105), Evaluación 2.
-Aplicación Android para registrar datos personales y preferencias académicas de prospectos,
-guardarlos en el dispositivo y consultarlos en un historial local.
+Aplicación Android para organizar eventos de captación, registrar prospectos y gestionar su seguimiento en la Región de Valparaíso.
 
-## Integrantes
+Mantiene el formulario, el historial desplegable, los recursos nativos y el diseño de la entrega de DSY1105. Utiliza azul marino y amarillo, con identidad propia de TherionLabs y sin logotipos de Duoc UC.
 
-- Diego Barra
-- Franco Tubi
-- Maicol García
-- Benjamín Osorio
+## Perfiles
 
-## Funcionalidades implementadas
+| Perfil | Funciones |
+|---|---|
+| Administrativo | Crear eventos, consultar todos sus prospectos, registrar gestiones y eliminar eventos vacíos. Puede eliminar prospectos que todavía no tengan gestiones. |
+| Captador | Seleccionar un evento existente, registrar prospectos y consultar sus propias capturas dentro de cada evento. |
 
-- Formulario de datos personales, establecimiento, modalidad y canal de contacto.
-- Selección de región, sede, nivel de interés y hasta tres carreras.
-- Validaciones centralizadas: RUT y dígito verificador, correo, celular, fecha de nacimiento,
-  campos obligatorios y selección de carreras.
-- Borrador compartido entre las pantallas mediante un ViewModel.
-- Guardado local con Room, historial con detalles y eliminación con confirmación.
-- Mensajes de error, estado de guardado y animaciones de navegación e interacción.
-- Foto opcional tomada con la aplicación de cámara del dispositivo.
-- Ubicación opcional de la captura con dirección aproximada, coordenadas, precisión y fecha.
-- Consulta de la foto y ubicación guardadas desde los detalles del historial.
+Las restricciones se aplican en la navegación y en las operaciones de guardado. El rol se comprueba contra la cuenta almacenada antes de crear o eliminar eventos, guardar prospectos y registrar gestiones.
 
-## Tecnologías y organización
+## Cuentas de prueba
 
-Kotlin, Jetpack Compose, Material 3, Navigation Compose, ViewModel, corrutinas y Room.
+| Usuario | Contraseña | Perfil |
+|---|---|---|
+| administrativo | Admin2026! | Administrativo |
+| captador | Captador2026! | Captador |
+| captador2 | Captador2026! | Captador |
 
-```text
-app/src/main/java/cl/duoc/therionlabs/
-  data/local/        Entidad, DAO, base de datos y migraciones
-  data/model/        Datos y errores del formulario
-  data/repository/   Acceso a la persistencia
-  data/viewmodel/    Estado, validación y operaciones de registro
-  ui/components/    Componentes visuales y acceso a cámara/ubicación
-  ui/screens/       Formulario, preferencias e historial
-  ui/theme/         Tema visual
-  util/             Reglas de validación
-```
+Las cuentas se inicializan al ingresar por primera vez. Las contraseñas se verifican mediante PBKDF2 con una sal distinta por cuenta. La autenticación es local y la sesión termina al cerrar el proceso de la aplicación.
 
-## Abrir y ejecutar en Android Studio
+## Recorrido
 
-1. Extraer el ZIP en una carpeta nueva.
-2. Elegir **Open** en Android Studio y seleccionar la carpeta que contiene
-   `settings.gradle.kts` y `gradlew.bat`.
-3. Usar una versión de Android Studio compatible con Android Gradle Plugin 9.3.3.
-   Conservar el Gradle wrapper incluido (9.5.0) y un JDK compatible, como el JDK 21
-   integrado en Android Studio.
-4. Esperar la sincronización de Gradle. La primera ejecución puede necesitar internet
-   para descargar dependencias y componentes del SDK.
-5. Instalar la plataforma Android SDK indicada por el proyecto: API 36, revisión menor 1,
-   y las herramientas que solicite Android Studio.
-6. Seleccionar un teléfono o emulador con Android 8.0 (API 26) o superior.
-7. Seleccionar la configuración **app** y pulsar **Run**.
+1. Ingresar como administrativo y crear un evento con nombre, institución, fecha, comuna y descripción.
+2. Cerrar sesión e ingresar como captador en el mismo dispositivo.
+3. Seleccionar el evento y pulsar **Registrar prospecto**.
+4. Completar datos personales, autorización de contacto y preferencias académicas. La fotografía y la ubicación son opcionales.
+5. Elegir Valparaíso o Viña del Mar. Las carreras disponibles cambian según la sede.
+6. Guardar. La aplicación abre los prospectos del evento correspondiente.
+7. En **Registros**, abrir un evento para consultar sus fichas. El administrativo ve todos los prospectos; el captador ve únicamente los registrados con su cuenta.
+8. Como administrativo, desplegar una ficha y abrir **Contacto y seguimiento**. Registrar resultado, canal y observación. El responsable y la fecha se guardan automáticamente.
 
-Para compilar desde la terminal de Windows, con Java y el SDK configurados:
+El historial permite buscar por nombre, RUT, correo y captador. Administración también puede filtrar por estado de seguimiento. Abrir el marcador o el correo no realiza una llamada ni envía un mensaje automáticamente. Sin autorización de contacto solo se habilitan gestiones internas con canal **Otro**.
+
+## Alcance regional
+
+La región de interés es fija: **Región de Valparaíso**. Solo se ofrecen las sedes **Valparaíso** y **Viña del Mar**. El catálogo está separado por sede y escuela; al cambiar de sede se conservan únicamente las carreras que también estén disponibles en la nueva selección.
+
+Se usa un catálogo local de preferencias, consultado en las páginas de ambas sedes. No representa una reserva de vacante ni confirma jornadas o modalidades. Su procedencia se encuentra en [CATALOGO.md](CATALOGO.md).
+
+## Persistencia y actualización
+
+Room utiliza la base `therionlabs_database`, versión 5. La migración desde la versión 4 del proyecto entregado agrega usuarios, eventos, responsables y gestiones sin borrar prospectos, fotografías ni ubicaciones. También se mantienen las migraciones de las versiones 1, 2 y 3.
+
+Las fichas anteriores no tienen evento ni captador asignado. Administración puede consultarlas en **Registros anteriores sin evento**. No se adjudican automáticamente a una cuenta o a una actividad nueva.
+
+El mismo RUT o correo no se puede registrar dos veces dentro del mismo evento. Se normalizan los formatos y la comprobación se realiza en la misma transacción que la inserción. Sí se permite registrar a esa persona en otro evento. Un evento con prospectos no se puede eliminar; una ficha con gestiones tampoco puede borrarse.
+
+La actualización de una instalación existente requiere el mismo identificador de aplicación y la misma firma. El APK de revisión tiene una firma de desarrollo; para actualizar la instalación del equipo se debe compilar con su firma habitual. Este proyecto migra la base del ZIP entregado, no la del otro proyecto que también utilizaba el número de versión 4 con un esquema diferente.
+
+## Abrir en Android Studio
+
+1. Extraer el ZIP y abrir la carpeta que contiene `settings.gradle.kts`.
+2. Usar JDK 21 y el Gradle wrapper incluido.
+3. Instalar Android SDK API 36, revisión menor 1, y las herramientas que solicite Android Studio.
+4. Ejecutar `app` en un teléfono o emulador Android 8.0 / API 26 o superior.
 
 ```powershell
-.\gradlew.bat assembleDebug
+.\gradlew.bat assembleDebug testDebugUnitTest lintDebug
 ```
 
-El APK se genera en `app/build/outputs/apk/debug/app-debug.apk`.
-El ZIP no incluye `local.properties`: Android Studio debe configurar la ruta del SDK
-para el equipo donde se abra el proyecto.
+Para ejecutar las pruebas de Room y repositorios en un teléfono o emulador conectado:
 
-## Uso de los dos recursos nativos
+```powershell
+.\gradlew.bat connectedDebugAndroidTest
+```
 
-En la segunda pantalla, antes de guardar, aparece **Foto y ubicación · opcionales**.
+## Organización
 
-### Cámara
+- `data/local`: entidades, consultas y migraciones de Room.
+- `data/model`: datos y errores del formulario.
+- `data/repository`: operaciones de persistencia y comprobación de permisos.
+- `data/viewmodel`: acceso, eventos, formularios y estado de las pantallas.
+- `domain`: perfiles, eventos, seguimiento, contraseñas y catálogo regional.
+- `ui/components`: controles del formulario y recursos nativos.
+- `ui/screens`: acceso, eventos, formulario, preferencias, registros y seguimiento.
+- `util`: validación de datos y resolución de direcciones.
 
-1. Pulsar **Tomar foto**.
-2. Tomar y confirmar la foto en la aplicación de cámara.
-3. Comprobar la vista previa al regresar al formulario.
-4. Guardar el prospecto y abrir sus detalles en el historial.
+## Límites actuales
 
-Se usa el contrato `TakePicture` y una URI de `FileProvider`. La captura se delega a la
-aplicación de cámara; esta app no accede directamente al hardware ni solicita un permiso
-CAMERA propio. La imagen se conserva en el almacenamiento privado de la aplicación.
-No se solicita permiso general de almacenamiento. Si no hay una aplicación de cámara o
-se cancela la captura, se puede continuar sin foto.
+Los perfiles comparten información dentro de una misma instalación. No hay servidor, sincronización entre teléfonos ni recuperación de contraseñas. Las fotografías permanecen en el almacenamiento privado y todavía no tienen limpieza automática al retirar un adjunto o eliminar una ficha. La dirección aproximada depende del servicio de geocodificación del dispositivo; si falla, se conservan las coordenadas.
 
-### Ubicación
+El borrador de captura se conserva durante los cambios de configuración y puede restaurarse al volver a ingresar con la misma cuenta si Android guardó el estado. Cerrar sesión o confirmar su descarte lo elimina.
 
-1. Activar la ubicación del dispositivo.
-2. Pulsar **Obtener ubicación actual** y conceder el permiso cuando Android lo solicite.
-3. Esperar las coordenadas y la dirección aproximada. Si no hay dirección, se conservan las coordenadas.
-4. Guardar y comprobar los datos en los detalles del historial.
+## Equipo
 
-Se solicitan permisos de ubicación precisa y aproximada durante el uso. La ubicación
-aproximada también se admite. Se usa `LocationManager` con proveedores disponibles;
-la escucha se cancela al recibir una posición, abandonar la pantalla o tras 20 segundos.
-Si se rechaza el permiso, la ubicación está desactivada o no hay señal, se informa al
-usuario y se permite guardar sin ubicación. No hay acceso a ubicación en segundo plano.
-En el emulador puede ser necesario enviar una posición desde **Extended controls > Location**.
-
-Ambos adjuntos son opcionales y se pueden retirar del borrador. Durante su captura se
-bloquea el botón de guardar para evitar guardar antes de recibir el resultado.
-
-## Comprobación manual recomendada
-
-- Intentar avanzar con campos vacíos y con RUT, correo, celular o fecha inválidos.
-- Completar los datos y comprobar que se conservan al volver entre los dos pasos.
-- Tomar una foto y también probar cancelar la cámara.
-- Obtener ubicación y probar rechazar el permiso o desactivar la ubicación.
-- Guardar con ambos recursos y también guardar sin adjuntos.
-- Abrir los detalles, cerrar la app y volver a abrir: comprobar persistencia.
-- Probar la actualización desde la base versión 2 y comprobar que siguen los registros.
-- Probar la eliminación con su confirmación.
-
-## Alcance y datos existentes
-
-Los registros se guardan localmente; no hay sincronización con un servidor implementada.
-Las fotos no se suben a internet. Los archivos de foto de borradores descartados o registros
-eliminados no tienen limpieza automática en esta versión.
-
-La base de datos utiliza la versión 4. Las migraciones 1 a 2, 2 a 3 y 3 a 4
-añaden los campos necesarios sin borrar registros existentes.
-La conservación al instalar una actualización exige el mismo identificador de aplicación
-y la misma firma. No desinstalar la app si se necesitan conservar sus registros.
-El borrador sin guardar no se recupera si Android termina el proceso.
-
-## Colaboración
-
-Repositorio: https://github.com/kasperkalli/DSY1105-TherionLabs
-
-El equipo debe mantener los commits de participación y su planificación en Trello o una
-herramienta equivalente, y adjuntar el enlace del tablero utilizado para la entrega.
-Este README no acredita actividad colaborativa que no esté registrada en esas herramientas.
-
-
-## Dirección aproximada
-
-`util/DireccionUbicacion.kt` convierte coordenadas en una dirección usando Geocoder de
-Android. La consulta no bloquea la interfaz y tiene una espera máxima de 8 segundos.
-En Android 13 o superior se usa la API por callback; en versiones anteriores la consulta
-se realiza en un hilo de trabajo. Si no hay servicio, no se encuentra una dirección,
-se agota el tiempo o falla la consulta, el registro conserva las coordenadas.
-
-La dirección puede contener calle, comuna o ciudad y no garantiza un número de calle.
-Depende del servicio disponible y puede requerir conexión. Geocoder puede consultar al
-proveedor de geocodificación del dispositivo con las coordenadas para resolverla; no hay
-sincronización del prospecto con un servidor propio. La dirección se guarda junto a la
-ubicación y se muestra primero tanto en el formulario como en el historial.
-Los registros previos mantienen sus datos y no se geocodifican automáticamente.
+Diego Barra, Franco Tubi, Maicol García y Benjamín Osorio.

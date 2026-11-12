@@ -27,7 +27,7 @@ object DireccionUbicacion {
     private suspend fun consultar(
         geocoder: Geocoder,
         latitud: Double,
-        longitud: Double
+        longitud: Double,
     ): List<Address>? = suspendCancellableCoroutine { continuacion ->
         val terminado = AtomicBoolean(false)
 
@@ -39,15 +39,20 @@ object DireccionUbicacion {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             try {
-                geocoder.getFromLocation(latitud, longitud, 1, object : Geocoder.GeocodeListener {
-                    override fun onGeocode(addresses: MutableList<Address>) {
-                        completar(addresses)
-                    }
+                geocoder.getFromLocation(
+                    latitud,
+                    longitud,
+                    1,
+                    object : Geocoder.GeocodeListener {
+                        override fun onGeocode(addresses: MutableList<Address>) {
+                            completar(addresses)
+                        }
 
-                    override fun onError(errorMessage: String?) {
-                        completar(null)
-                    }
-                })
+                        override fun onError(errorMessage: String?) {
+                            completar(null)
+                        }
+                    },
+                )
             } catch (_: Exception) {
                 completar(null)
             }
@@ -61,10 +66,11 @@ object DireccionUbicacion {
                 } catch (_: Exception) {
                     completar(null)
                 }
-            }.apply {
-                name = "DireccionUbicacion"
-                isDaemon = true
             }
+                .apply {
+                    name = "DireccionUbicacion"
+                    isDaemon = true
+                }
 
             continuacion.invokeOnCancellation {
                 terminado.set(true)
@@ -79,13 +85,13 @@ object DireccionUbicacion {
         if (!linea.isNullOrBlank()) return linea.trim()
 
         return listOfNotNull(
-            direccion.thoroughfare,
-            direccion.subThoroughfare,
-            direccion.subLocality,
-            direccion.locality,
-            direccion.adminArea,
-            direccion.countryName
-        )
+                direccion.thoroughfare,
+                direccion.subThoroughfare,
+                direccion.subLocality,
+                direccion.locality,
+                direccion.adminArea,
+                direccion.countryName,
+            )
             .map { it.trim() }
             .filter { it.isNotEmpty() }
             .distinct()

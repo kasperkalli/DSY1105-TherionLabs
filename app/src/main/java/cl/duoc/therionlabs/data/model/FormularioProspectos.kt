@@ -1,7 +1,12 @@
 package cl.duoc.therionlabs.data.model
 
+import cl.duoc.therionlabs.domain.CatalogoRegional
+import java.io.Serializable
+
 // Solo contiene datos: no depende de Compose, Room ni del ViewModel.
 data class FormularioProspectos(
+    val eventoId: String = "",
+    val eventoNombre: String = "",
     val rut: String = "",
     val nombre: String = "",
     val apellidos: String = "",
@@ -13,7 +18,7 @@ data class FormularioProspectos(
     val comunaEstablecimiento: String = "",
     val actividadActual: String = "",
     val jornada: String = "",
-    val region: String = "",
+    val region: String = CatalogoRegional.region,
     val sede: String = "",
     val nivelInteres: String = "",
     val carreras: List<String> = emptyList(),
@@ -26,8 +31,8 @@ data class FormularioProspectos(
     val precisionMetros: Float? = null,
     val fechaUbicacion: Long? = null,
     val direccion: String? = null,
-    val autorizaContacto: Boolean = false
-)
+    val autorizaContacto: Boolean = false,
+) : Serializable
 
 // null significa que ese campo no tiene un mensaje de error.
 data class ErroresFormularioProspectos(
@@ -47,14 +52,26 @@ data class ErroresFormularioProspectos(
     val region: String? = null,
     val sede: String? = null,
     val nivelInteres: String? = null,
-    val carreras: String? = null
+    val carreras: String? = null,
 ) {
     val hayErroresDatosPersonales: Boolean
-        get() = listOf(
-            rut, nombre, apellidos, fechaNacimiento, celular, email,
-            establecimiento, comunaResidencia, comunaEstablecimiento,
-            actividadActual, jornada, modalidad, canalContacto
-        ).any { it != null }
+        get() =
+            listOf(
+                    rut,
+                    nombre,
+                    apellidos,
+                    fechaNacimiento,
+                    celular,
+                    email,
+                    establecimiento,
+                    comunaResidencia,
+                    comunaEstablecimiento,
+                    actividadActual,
+                    jornada,
+                    modalidad,
+                    canalContacto,
+                )
+                .any { it != null }
 
     val hayErroresSeleccion: Boolean
         get() = listOf(region, sede, nivelInteres, carreras).any { it != null }
