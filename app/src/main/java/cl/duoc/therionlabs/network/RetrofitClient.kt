@@ -6,7 +6,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 object RetrofitClient {
 
     // Backend Spring Boot desde el emulador Android
-    private const val BASE_URL = "http://10.0.2.2:8081/"
+    private const val BASE_URL = "http://192.168.1.5:8081/"
 
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
@@ -37,5 +37,18 @@ object RetrofitClient {
         retrofit.create(DispositivoApi::class.java)
     }
 
+    // API para descargar reportes Excel administrativos
+    val excelApi: ExcelApi by lazy {
+        retrofit.create(ExcelApi::class.java)
+    }
 
+    // API para registrar captadores y generar sus tokens
+    val captadorAdminApi: CaptadorAdminApi by lazy {
+        retrofit.create(CaptadorAdminApi::class.java)
+    }
+
+    // Estadísticas administrativas por evento
+    val estadisticasAdminApi: EstadisticasAdminApi by lazy {
+        retrofit.create(EstadisticasAdminApi::class.java)
+    }
 }

@@ -24,13 +24,21 @@ class ProspectoSyncWorker(
     private val participacionClient =
         ParticipacionEventoClient(appContext)
 
+
     override suspend fun doWork(): Result {
+        Log.i(
+            "TherionLabsSync",
+            "WORKER INICIADO - Comenzando sincronización"
+        )
 
         val dao = database.prospectoDao()
+        val pendientes = dao.obtenerPendientesSincronizacion()
 
+        Log.i(
+            "TherionLabsSync",
+            "Prospectos pendientes encontrados: ${pendientes.size}"
+        )
         try {
-            val pendientes =
-                dao.obtenerPendientesSincronizacion()
 
             for (prospecto in pendientes) {
 
@@ -48,7 +56,10 @@ class ProspectoSyncWorker(
                     return Result.failure()
                 }
 
-                val token = tokenStore.obtenerToken(usuarioId)
+
+                val token = tokenStore.obtenerTokenPorCodigo(usuarioId)
+                    ?: tokenStore.obtenerToken(usuarioId)
+
                 if (token.isNullOrBlank()) {
                     Log.w(
                         "TherionLabsSync",
@@ -57,6 +68,31 @@ class ProspectoSyncWorker(
                     continue
                 }
 
+                val verificacion = RetrofitClient.dispositivoApi
+                    .verificarDispositivo(token)
+
+                if (!verificacion.isSuccessful) {
+                    val codigo = verificacion.code()
+                    if (codigo == 429 || codigo in 500..599) {
+                        return Result.retry()
+                    }
+                    Log.w(
+                        "TherionLabsSync",
+                        "No se pudo verificar el token de $usuarioId: HTTP $codigo"
+                    )
+                    continue
+                }
+                val dispositivo = verificacion.body()
+                if (
+                    dispositivo?.autorizado != true ||
+                    dispositivo.identificadorLocal != usuarioId
+                ) {
+                    Log.w(
+                        "TherionLabsSync",
+                        "El token no corresponde al captador $usuarioId"
+                    )
+                    continue
+                }
                 try {
                     participacionClient.unirseEvento(
                         usuarioId = usuarioId,
@@ -114,18 +150,53 @@ class ProspectoSyncWorker(
                     }
 
 
+
                 } else if (respuesta.code() == 409) {
 
-                    // El servidor detectó un conflicto.
                     Log.w(
                         "TherionLabsSync",
                         "Prospecto ${prospecto.identificador} rechazado: HTTP 409"
                     )
-                    // Continuar con los siguientes registros pendientes.
+                    val cuerpoError = respuesta.errorBody()?.string().orEmpty()
+
+                    val rechazoConfirmado = try {
+                        val json = org.json.JSONObject(cuerpoError)
+                        json.optString("estado") == "CONFLICTO" &&
+                                json.optString("prospectoId") ==
+                                prospecto.identificador &&
+                                json.optString("mensaje").isNotBlank()
+
+                    } catch (_: Exception) {
+                        false
+                    }
+                    if (rechazoConfirmado) {
+                        val actualizados = dao.marcarComoRechazado(
+                            id = prospecto.id,
+                            identificador = prospecto.identificador
+                        )
+
+                        if (actualizados != 1) {
+                            Log.e(
+                                "TherionLabsSync",
+                                "No se pudo actualizar el estado del prospecto " +
+                                        "${prospecto.identificador} en Room."
+                            )
+                            return Result.failure()
+                        }
+                        Log.i(
+                            "TherionLabsSync",
+                            "Prospecto rechazado guardado en Room. " +
+                                    "Filas actualizadas: $actualizados"
+                        )
+                    } else {
+                        Log.e(
+                            "TherionLabsSync",
+                            "HTTP 409 sin confirmación válida del rechazo."
+                        )
+                        return Result.failure()
+                    }
                     continue
-
-
-                } else if (respuesta.code() in 500..599 ||
+            } else if (respuesta.code() in 500..599 ||
                     respuesta.code() == 429) {
 
                     // Error temporal del servidor

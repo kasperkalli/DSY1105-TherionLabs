@@ -56,6 +56,18 @@ interface ProspectoDAO {
         identificador: String
     ): Int
 
+    @Query("""
+    UPDATE prospectos
+    SET sincronizado = 2
+    WHERE id = :id
+    AND identificador = :identificador
+    AND sincronizado = 0
+""")
+    suspend fun marcarComoRechazado(
+        id: Int,
+        identificador: String
+    ): Int
+
 
     @Query("""
     SELECT COUNT(*)
@@ -72,6 +84,14 @@ interface ProspectoDAO {
     AND captadorId = :usuarioId
 """)
     suspend fun contarSincronizados(usuarioId: String): Int
+
+    @Query("""
+    SELECT COUNT(*)
+    FROM prospectos
+    WHERE sincronizado = 2
+    AND captadorId = :usuarioId
+""")
+    suspend fun contarRechazados(usuarioId: String): Int
 
 
 }

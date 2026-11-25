@@ -230,6 +230,27 @@ private fun NavegacionSesion(
                     icon = { Icon(IconosFormulario.Persona, null) },
                     label = { Text("Cuenta") },
                 )
+                if (administrativo) {
+                    NavigationBarItem(
+                        selected = ruta == "gestion_captadores",
+                        enabled = !ocupado,
+                        onClick = {
+                            abandonar {
+                                cambiarSeccion("gestion_captadores")
+                            }
+                        },
+                        icon = {
+                            Icon(
+                                IconosFormulario.Persona,
+                                contentDescription = null
+                            )
+                        },
+                        label = {
+                            Text("Captadores")
+                        }
+                    )
+                }
+
             }
         },
     ) { espacio ->
@@ -246,6 +267,17 @@ private fun NavegacionSesion(
                     ::capturar,
                     { navegar("prospectos/$it") },
                 )
+            }
+            composable("gestion_captadores") {
+                if (administrativo) {
+                    GestionCaptadoresScreen(
+                        onVolver = {
+                            cambiarSeccion("eventos")
+                        }
+                    )
+                } else {
+                    AccesoRestringido()
+                }
             }
             composable("crear_evento") {
                 if (administrativo)
@@ -323,8 +355,12 @@ private fun NavegacionSesion(
                         HorizontalDivider()
 
                         VincularDispositivoSection(
-                            usuarioId = usuario.id
+                            usuarioId = usuario.id,
+                            onVinculacionExitosa = {
+                                formulario.actualizarIdentidadCaptador()
+                            }
                         )
+
 
                         HorizontalDivider()
 

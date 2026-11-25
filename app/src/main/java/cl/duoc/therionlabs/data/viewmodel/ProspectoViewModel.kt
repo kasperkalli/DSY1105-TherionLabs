@@ -30,6 +30,8 @@ import kotlinx.coroutines.launch
 import android.app.Application
 import cl.duoc.therionlabs.worker.SyncScheduler
 
+import cl.duoc.therionlabs.network.DispositivoTokenStore
+
 data class EstadoHistorial(
     val registros: List<ProspectoEntity> = emptyList(),
     val cargando: Boolean = true,
@@ -42,6 +44,13 @@ class ProspectoViewModel(
     private val aplicacion: Application,
 ) : ViewModel() {
 
+    fun actualizarIdentidadCaptador() {
+        val usuario = usuarioActivo.value
+
+        codigoCaptadorActivo.value =
+            usuario?.takeIf { PermisosPerfil.puedeCapturar(it) }
+                ?.let { tokenStore.obtenerCodigoCaptador(it.id) }
+    }
 
     var formulario by
     mutableStateOf(guardado.get<FormularioProspectos>("formulario") ?: FormularioProspectos())
@@ -71,12 +80,28 @@ class ProspectoViewModel(
         private set
 
     private val usuarioActivo = MutableStateFlow<SesionUsuario?>(null)
+
+    private val tokenStore = DispositivoTokenStore(aplicacion)
+
+    private val codigoCaptadorActivo =
+        MutableStateFlow<String?>(null)
+
     val estadoHistorial: Flow<EstadoHistorial> =
-        combine(repositorio.registros(), usuarioActivo) { registros, usuario ->
+        combine(
+            repositorio.registros(),
+            usuarioActivo,
+            codigoCaptadorActivo
+        ) { registros, usuario, codigoCaptador ->
             EstadoHistorial(
-                registros =
-                    registros.filter { PermisosPerfil.puedeConsultar(usuario, it.captadorId) },
-                cargando = false,
+                registros = registros.filter { prospecto ->
+                    when {
+                        usuario == null -> false
+                        PermisosPerfil.puedeAdministrar(usuario) -> true
+                        codigoCaptador.isNullOrBlank() -> false
+                        else -> prospecto.captadorId == codigoCaptador
+                    }
+                },
+                cargando = false
             )
         }
             .catch { error ->
@@ -85,7 +110,7 @@ class ProspectoViewModel(
                 emit(
                     EstadoHistorial(
                         cargando = false,
-                        error = "No se pudieron cargar los registros.",
+                        error = "No se pudieron cargar los registros."
                     )
                 )
             }
@@ -96,6 +121,11 @@ class ProspectoViewModel(
             val responsable = guardado.get<String>("responsable")
             if (responsable != usuario?.id) descartarFormulario()
             usuarioActivo.value = usuario
+
+            codigoCaptadorActivo.value =
+                usuario?.takeIf { PermisosPerfil.puedeCapturar(it) }
+                    ?.let { tokenStore.obtenerCodigoCaptador(it.id) }
+
             guardado["responsable"] = usuario?.id
         }
     }
@@ -350,7 +380,11 @@ class ProspectoViewModel(
             initializer {
                 val aplicacion = checkNotNull(this[APPLICATION_KEY])
                 val baseDeDatos = AppDatabase.getDatabase(aplicacion)
-                val repositorio = ProspectoRepository(baseDeDatos)
+                val repositorio = ProspectoRepository(
+                    db = baseDeDatos,
+                    tokenStore = DispositivoTokenStore(aplicacion)
+                )
+
                 ProspectoViewModel(
                     repositorio,
                     createSavedStateHandle(),

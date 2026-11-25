@@ -9,26 +9,45 @@ import androidx.work.WorkManager
 
 object SyncScheduler {
 
-    private const val TRABAJO_SYNC = "therionlabs_sync_prospectos"
+    private const val TRABAJO_SYNC =
+        "therionlabs_sync_prospectos"
 
+    // Sincronización automática
     fun solicitarSincronizacion(context: Context) {
 
-        // Ejecutar solamente cuando exista internet
         val restricciones = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
 
-        // Crear el trabajo de sincronización
         val solicitud =
             OneTimeWorkRequestBuilder<ProspectoSyncWorker>()
                 .setConstraints(restricciones)
                 .build()
 
-        // Evitar acumular trabajos duplicados
         WorkManager.getInstance(context.applicationContext)
             .enqueueUniqueWork(
                 TRABAJO_SYNC,
                 ExistingWorkPolicy.KEEP,
+                solicitud
+            )
+    }
+
+    // Sincronización manual
+    fun forzarSincronizacion(context: Context) {
+
+        val restricciones = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val solicitud =
+            OneTimeWorkRequestBuilder<ProspectoSyncWorker>()
+                .setConstraints(restricciones)
+                .build()
+
+        WorkManager.getInstance(context.applicationContext)
+            .enqueueUniqueWork(
+                TRABAJO_SYNC,
+                ExistingWorkPolicy.REPLACE,
                 solicitud
             )
     }

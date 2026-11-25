@@ -6,8 +6,26 @@ import cl.duoc.therionlabs.domain.*
 import cl.duoc.therionlabs.util.ValidacionesProspecto
 import java.util.Locale
 
-class ProspectoRepository(private val db: AppDatabase) {
+class ProspectoRepository(
+    private val db: AppDatabase,
+    private val tokenStore: cl.duoc.therionlabs.network.DispositivoTokenStore? = null
+) {
     private val dao = db.prospectoDao()
+
+    private fun obtenerIdentidadCaptador(
+        usuarioId: String
+    ): Pair<String, String>? {
+
+        val store = tokenStore ?: return null
+
+        val captadorId = store.obtenerCaptadorId(usuarioId)
+            ?: return null
+
+        val codigoCaptador = store.obtenerCodigoCaptador(usuarioId)
+            ?: return null
+
+        return captadorId to codigoCaptador
+    }
 
     fun registros() = dao.obtenerProspectos()
 
@@ -62,14 +80,27 @@ class ProspectoRepository(private val db: AppDatabase) {
                 throw ProspectoDuplicadoException("Este RUT ya está registrado en el evento.")
             if (dao.existeCorreo(event.id, email))
                 throw ProspectoDuplicadoException("Este correo ya está registrado en el evento.")
+
+            val identidad = obtenerIdentidadCaptador(usuario.id)
+
+            val codigoCaptador = if (tokenStore != null) {
+                requireNotNull(identidad?.second) {
+                    "Primero debes vincular tu dispositivo " +
+                            "con el token entregado por Administración."
+                }
+            } else {
+                responsable.id
+            }
+
             dao.insertarProspecto(
                 prospecto.copy(
                     eventoNombre = event.nombre,
-                    captadorId = responsable.id,
-                    captador = responsable.nombre,
+                    captadorId = codigoCaptador,
+                    captador = codigoCaptador,
                     email = email,
                 )
             )
+
         }
 
     suspend fun borrarProspecto(usuario: SesionUsuario, id: Int) = db.withTransaction {

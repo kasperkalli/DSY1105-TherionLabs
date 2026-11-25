@@ -11,9 +11,11 @@ class ParticipacionEventoClient(context: Context) {
         usuarioId: String,
         eventoId: String
     ) {
-        val token = tokenStore.obtenerToken(usuarioId)
+        val token = tokenStore.obtenerTokenPorCodigo(usuarioId)
+            ?: tokenStore.obtenerToken(usuarioId)
             ?: throw IllegalArgumentException(
-                "Primero vincula tu dispositivo en Mi cuenta."
+                "No hay un token vinculado para $usuarioId. " +
+                        "Vincula tu dispositivo en Mi cuenta."
             )
 
         val verificacion = RetrofitClient.dispositivoApi
@@ -39,9 +41,11 @@ class ParticipacionEventoClient(context: Context) {
 
         require(
             dispositivo.autorizado &&
+                    dispositivo.captadorId.isNotBlank() &&
                     dispositivo.identificadorLocal == usuarioId
         ) {
-            "El dispositivo no corresponde a $usuarioId."
+            "El token no pertenece al captador $usuarioId. " +
+                    "No se registrará la participación."
         }
 
         // Registrar la participación en Spring Boot
